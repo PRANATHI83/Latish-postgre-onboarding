@@ -1,0 +1,61 @@
+version: '3.9'
+
+services:
+  postgres:
+    image: postgres:15
+    container_name: onboarding_postgres
+    ports:
+      - "5449:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: admin234
+      POSTGRES_DB: employee_onboarding
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - onboarding_net
+
+  backend:
+    build: ./Backend
+    container_name: onboarding_backend
+    ports:
+      - "3016:3016"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - onboarding_net
+
+  employee-onboarding:
+    build: ./Employee-Onboarding
+    container_name: onboarding_employee
+    ports:
+      - "8032:80"
+    depends_on:
+      - backend
+    networks:
+      - onboarding_net
+
+  hr-onboarding:
+    build: ./HR-Onboarding
+    container_name: onboarding_hr
+    ports:
+      - "8033:80"
+    depends_on:
+      - backend
+    networks:
+      - onboarding_net
+
+volumes:
+  pgdata:
+
+networks:
+  onboarding_net:
+    driver: bridge
+
